@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ocean Terminal Tram Board</title>
+<style>
+  body {
+    margin: 0;
+    font-family: monospace;
+    background: black;
+    color: #FFD700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100vh;
+  }
+  h1 {
+    font-size: 3em;
+    margin: 20px 0;
+  }
+  table {
+    font-size: 2em;
+    border-collapse: collapse;
+    width: 80%;
+  }
+  th, td {
+    padding: 10px 30px;
+    text-align: left;
+  }
+  tr.next {
+    background: #FFD700;
+    color: black;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<h1>Ocean Terminal → Edinburgh Airport</h1>
+<table id="tramTimes">
+  <tr><th>Stop</th><th>Departure</th></tr>
+
+  <!-- ==========================
+       WEEKDAY TIMES (Mon-Fri)
+       Expanded 24-hour timetable
+       ========================== -->
+  <tr data-time="05:23"><td>Ocean Terminal</td><td>05:23</td></tr>
+  <tr data-time="05:33"><td>Ocean Terminal</td><td>05:33</td></tr>
+  <tr data-time="05:43"><td>Ocean Terminal</td><td>05:43</td></tr>
+  <tr data-time="05:53"><td>Ocean Terminal</td><td>05:53</td></tr>
+  <tr data-time="06:03"><td>Ocean Terminal</td><td>06:03</td></tr>
+  <tr data-time="06:13"><td>Ocean Terminal</td><td>06:13</td></tr>
+  <tr data-time="06:23"><td>Ocean Terminal</td><td>06:23</td></tr>
+  <tr data-time="06:33"><td>Ocean Terminal</td><td>06:33</td></tr>
+  <tr data-time="06:43"><td>Ocean Terminal</td><td>06:43</td></tr>
+  <tr data-time="06:53"><td>Ocean Terminal</td><td>06:53</td></tr>
+  <tr data-time="07:03"><td>Ocean Terminal</td><td>07:03</td></tr>
+
+  <!-- Every 7 mins from 07:03 to 20:09 -->
+  <!-- I’ll generate this in a compact way with JS below so HTML doesn’t explode -->
+</table>
+
+<script>
+// ===========================
+// FULL 24-HOUR BOARD GENERATOR
+// ===========================
+
+const tramTimesTable = document.getElementById('tramTimes');
+
+// Weekday rules: array of objects {start, end, stepMinutes}
+const weekdayIntervals = [
+  { start: "05:23", end: "07:03", step: 10 },
+  { start: "07:03", end: "20:09", step: 7 },
+  { start: "20:09", end: "23:59", step: 10 }
+];
+
+// Weekend rules
+const weekendIntervals = [
+  { start: "05:23", end: "09:03", step: 10 },
+  { start: "09:03", end: "22:09", step: 7 },
+  { start: "22:09", end: "23:59", step: 10 }
+];
+
+// Helper to convert HH:MM → minutes
+function timeToMinutes(t) {
+  const [h,m] = t.split(":").map(Number);
+  return h*60 + m;
+}
+
+// Helper to convert minutes → HH:MM
+function minutesToTime(m) {
+  const h = Math.floor(m/60).toString().padStart(2,'0');
+  const min = (m%60).toString().padStart(2,'0');
+  return `${h}:${min}`;
+}
+
+// Generate tr rows for an interval
+function generateIntervalRows(intervals) {
+  const today = new Date();
+  const day = today.getDay(); // 0 = Sunday, 1=Monday, ..., 6=Saturday
+  let rules = (day === 0 || day === 6) ? weekendIntervals : weekdayIntervals;
+
+  rules.forEach(r => {
+    let startM = timeToMinutes(r.start);
+    const endM = timeToMinutes(r.end);
+    while(startM <= endM) {
+      const t = minutesToTime(startM);
+      const tr = document.createElement('tr');
+      tr.dataset.time = t;
+      tr.innerHTML = `<td>Ocean Terminal</td><td>${t}</td>`;
+      tramTimesTable.appendChild(tr);
+      startM += r.step;
+    }
+  });
+}
+
+// Highlight next tram
+function updateNextTram() {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2,'0');
+  const minutes = now.getMinutes().toString().padStart(2,'0');
+  const currentTime = `${hours}:${minutes}`;
+  
+  const rows = document.querySelectorAll('#tramTimes tr[data-time]');
+  rows.forEach(row => row.classList.remove('next'));
+
+  for (let row of rows) {
+    if (row.dataset.time >= currentTime) {
+      row.classList.add('next');
+      break; // only highlight next tram
+    }
+  }
+}
+
+// Run everything
+generateIntervalRows();
+updateNextTram();
+setInterval(updateNextTram, 30000);
+</script>
+</body>
+</html>
