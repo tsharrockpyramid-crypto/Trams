@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ocean Terminal Tram Board</title>
+<style>
+  body {
+    margin: 0;
+    font-family: monospace;
+    background: black;
+    color: #FFD700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+  }
+  h1 {
+    font-size: 3em;
+    margin-bottom: 50px;
+  }
+  #next-tram {
+    font-size: 6em;
+    font-weight: bold;
+  }
+  #following-tram {
+    font-size: 3em;
+    color: #888;
+    margin-top: 20px;
+  }
+  #countdown {
+    font-size: 2em;
+    margin-top: 30px;
+    color: #FFD700;
+  }
+</style>
+</head>
+<body>
+<h1>Ocean Terminal → Edinburgh Airport</h1>
+
+<div id="next-tram">--:--</div>
+<div id="following-tram">--:--</div>
+<div id="countdown">-- mins</div>
+
+<script>
+// ----------------------------
+// Tram timetable logic
+// ----------------------------
+
+// Weekday rules: array of objects {start, end, stepMinutes}
+const weekdayIntervals = [
+  { start: "05:23", end: "07:03", step: 10 },
+  { start: "07:03", end: "20:09", step: 7 },
+  { start: "20:09", end: "23:59", step: 10 }
+];
+
+// Weekend rules
+const weekendIntervals = [
+  { start: "05:23", end: "09:03", step: 10 },
+  { start: "09:03", end: "22:09", step: 7 },
+  { start: "22:09", end: "23:59", step: 10 }
+];
+
+// Helpers
+function timeToMinutes(t) {
+  const [h,m] = t.split(":").map(Number);
+  return h*60 + m;
+}
+function minutesToTime(m) {
+  const h = Math.floor(m/60).toString().padStart(2,'0');
+  const min = (m%60).toString().padStart(2,'0');
+  return `${h}:${min}`;
+}
+
+// Generate full tram timetable array for today
+function generateTimetable() {
+  const today = new Date();
+  const day = today.getDay(); // 0=Sun, 1=Mon,...6=Sat
+  const rules = (day === 0 || day === 6) ? weekendIntervals : weekdayIntervals;
+  const times = [];
+  rules.forEach(r => {
+    let startM = timeToMinutes(r.start);
+    const endM = timeToMinutes(r.end);
+    while(startM <= endM) {
+      times.push(minutesToTime(startM));
+      startM += r.step;
+    }
+  });
+  return times;
+}
+
+// Update display
+function updateBoard() {
+  const now = new Date();
+  const currentMinutes = now.getHours()*60 + now.getMinutes();
+  const timetable = generateTimetable();
+
+  let next = "--:--";
+  let following = "--:--";
+  let countdown = "--";
+
+  for(let i=0; i<timetable.length; i++){
+    const tMins = timeToMinutes(timetable[i]);
+    if(tMins > currentMinutes){
+      next = timetable[i];
+      following = timetable[i+1] || "--:--";
+      countdown = tMins - currentMinutes;
+      break;
+    }
+  }
+
+  document.getElementById("next-tram").innerText = next;
+  document.getElementById("following-tram").innerText = following;
+  document.getElementById("countdown").innerText = countdown + " mins";
+}
+
+// Update every 30 seconds
+updateBoard();
+setInterval(updateBoard, 30000);
+</script>
+</body>
+</html>
